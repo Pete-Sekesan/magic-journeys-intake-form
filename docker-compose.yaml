@@ -1,0 +1,58 @@
+version: "3"
+
+## Search and replace 'intake-form' with the name of the service
+
+services:
+  intake-form:
+    container_name: intake-form
+    hostname: intake-form
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/usr/app
+      - /usr/app/node_modules
+      - /usr/app/bin
+    build:
+      context: .
+    environment:
+      - ENV
+      - BUILD_VERSION=local-build # DO NOT SPECIFY WHEN DEPLOYING TO STAGE
+      - NODE_ENV=${ENV} # CAN ONLY BE 'local' OR 'production', hardcode to 'production' WHEN DEPLOYING TO STAGE AND PROD
+      - NODE_OPTIONS=--enable-source-maps
+      - LOG_LEVEL=info
+      - LOG_PRETTY=on
+      - MYSQL_USER=root
+      - MYSQL_PASS=root
+      - MYSQL_HOST=intake-form-mysql
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    restart: unless-stopped
+  mysql:
+    container_name: intake-form-mysql
+    image: mysql/mysql-server:8.0.23
+    hostname: intake-form-mysql
+    ports:
+      - 53306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - mysql_db:/var/lib/mysql:rw
+    restart: unless-stopped
+  proxy:
+    container_name: proxy
+    image: nginx:1.25.4-bookworm
+    ports:
+      - 80:80
+    volumes:
+      - ./proxy:/etc/nginx
+      - ./logs/nginx:/var/log/nginx
+      - /etc/nginx/modules
+    restart: unless-stopped
+volumes:
+  mysql_db:
+
+    
